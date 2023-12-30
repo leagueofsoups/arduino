@@ -1,0 +1,70 @@
+#include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
+#include <UniversalTelegramBot.h>
+#include <ArduinoJson.h>
+
+// Замените на свои сетевые данные
+  const char* ssid = "Yalta";
+  const char* password = "Y@lta0851";
+
+// Инициализация Telegram бота
+#define BOTtoken "482869530:AAFEkhE2Eib0Bro6bydv-JRBXcNIMtIC8Ag"  // mr.salmon
+
+
+#define CHAT_ID "339507845"                                      // ID чата 
+
+X509List cert(TELEGRAM_CERTIFICATE_ROOT);
+WiFiClientSecure client;
+UniversalTelegramBot bot(BOTtoken, client);
+
+const int motionSensor = D4;                                   // PIR датчик
+
+
+
+//int motionSensor = 4;
+
+
+
+bool motionDetected = false;
+
+// Индикация обнаружения движения
+void ICACHE_RAM_ATTR detectsMovement() {
+  //Serial.println("Обнаружено движение!!!");
+  motionDetected = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+ // client.setInsecure();
+
+  
+  pinMode(motionSensor, INPUT_PULLUP);                          // Внутренняя подтяжка PIR  INPUT_PULLUP
+  attachInterrupt(digitalPinToInterrupt(motionSensor), detectsMovement, RISING); // Внешнее прерывание
+
+  // Attempt to connect to Wifi network:
+  Serial.print("Соединение с Wifi: ");
+  Serial.println(ssid);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+
+  Serial.println("");
+  Serial.println("WiFi соединение установлено");
+  Serial.print("IP адрес: ");
+  Serial.println(WiFi.localIP());
+
+  bot.sendMessage(CHAT_ID, "Бот стартовал", "");
+}
+
+void loop() {
+  //if(motionDetected){
+    bot.sendMessage(CHAT_ID, "Обнаружено движение!!!", "");  // 339507845
+    Serial.println("Обнаружено движение");
+    motionDetected = false;
+  //}
+}
