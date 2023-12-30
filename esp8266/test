@@ -1,70 +1,56 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 #include <UniversalTelegramBot.h>
-#include <ArduinoJson.h>
 
-// Замените на свои сетевые данные
-  const char* ssid = "Yalta";
-  const char* password = "Y@lta0851";
-
-// Инициализация Telegram бота
-#define BOTtoken "482869530:AAFEkhE2Eib0Bro6bydv-JRBXcNIMtIC8Ag"  // mr.salmon
-
-
-#define CHAT_ID "339507845"                                      // ID чата 
+#define WIFI_SSID "Yalta"
+#define WIFI_PASSWORD "CHANGEIT"
+#define BOT_TOKEN "CHANGEIT"
+#define CHAT_ID "6509981211"
 
 X509List cert(TELEGRAM_CERTIFICATE_ROOT);
-WiFiClientSecure client;
-UniversalTelegramBot bot(BOTtoken, client);
+WiFiClientSecure secured_client;
+UniversalTelegramBot bot(BOT_TOKEN, secured_client);
 
-const int motionSensor = D4;                                   // PIR датчик
-
-
-
-//int motionSensor = 4;
-
-
-
-bool motionDetected = false;
-
-// Индикация обнаружения движения
-void ICACHE_RAM_ATTR detectsMovement() {
-  //Serial.println("Обнаружено движение!!!");
-  motionDetected = true;
-}
-
-void setup() {
+void setup()
+{
   Serial.begin(115200);
- // client.setInsecure();
+  Serial.println();
 
+  // attempt to connect to Wifi network:
+  Serial.print("Connecting to Wifi SSID ");
+  Serial.print(WIFI_SSID);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  secured_client.setTrustAnchors(&cert); // Add root certificate for api.telegram.org
   
-  pinMode(motionSensor, INPUT_PULLUP);                          // Внутренняя подтяжка PIR  INPUT_PULLUP
-  attachInterrupt(digitalPinToInterrupt(motionSensor), detectsMovement, RISING); // Внешнее прерывание
-
-  // Attempt to connect to Wifi network:
-  Serial.print("Соединение с Wifi: ");
-  Serial.println(ssid);
-
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     Serial.print(".");
     delay(500);
   }
-
-  Serial.println("");
-  Serial.println("WiFi соединение установлено");
-  Serial.print("IP адрес: ");
+  Serial.print("\nWiFi connected. IP address: ");
   Serial.println(WiFi.localIP());
 
-  bot.sendMessage(CHAT_ID, "Бот стартовал", "");
+  Serial.print("Retrieving time: ");
+  configTime(0, 0, "pool.ntp.org"); // get UTC time via NTP
+  time_t now = time(nullptr);
+  while (now < 24 * 3600)
+  {
+    Serial.print(".");
+    delay(100);
+    now = time(nullptr);
+  }
+  Serial.println(now);
+
+  pinMode(D7, INPUT);
 }
 
-void loop() {
-  //if(motionDetected){
-    bot.sendMessage(CHAT_ID, "Обнаружено движение!!!", "");  // 339507845
+void loop()
+{
+  Serial.println("loop()");
+  Serial.println(String(digitalRead(D7)));
+
+  if(digitalRead(D7)){
+    bot.sendMessage(CHAT_ID, "Обнаружено движение!!!"); 
     Serial.println("Обнаружено движение");
-    motionDetected = false;
-  //}
+  }
 }
